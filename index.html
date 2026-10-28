@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Project Roadmap</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div>
+      <h1 id="title">Project Roadmap</h1>
+      <p id="subtitle" class="subtitle"></p>
+    </div>
+    <div class="header-actions">
+      <button id="reload" class="btn" type="button" title="Reload data">↻ Reload</button>
+      <a id="edit-link" class="btn btn-primary" target="_blank" rel="noopener" hidden>✎ Edit milestones</a>
+    </div>
+  </header>
+
+  <section class="controls" aria-label="Filters">
+    <div class="control-group">
+      <span class="control-label">Themes</span>
+      <div id="theme-filters" class="chips"></div>
+    </div>
+    <div class="control-group">
+      <span class="control-label">Horizon</span>
+      <div id="horizon-filters" class="chips"></div>
+    </div>
+    <div class="control-row">
+      <input id="search" type="search" placeholder="Search milestones, owners, notes…" aria-label="Search">
+      <label class="select">
+        Group by
+        <select id="group-by">
+          <option value="theme">Theme</option>
+          <option value="horizon">Horizon</option>
+        </select>
+      </label>
+      <div id="zoom" class="segmented" role="group" aria-label="Zoom">
+        <button type="button" data-zoom="month">Month</button>
+        <button type="button" data-zoom="quarter">Quarter</button>
+        <button type="button" data-zoom="year">Year</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="warnings" class="warnings" hidden></div>
+
+  <main id="gantt" class="gantt"><p class="empty">Loading milestones…</p></main>
+
+  <footer class="site-footer">
+    <span id="source"></span>
+  </footer>
+
+  <div id="popover" class="popover" role="dialog" hidden></div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
