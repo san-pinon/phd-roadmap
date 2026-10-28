@@ -5,11 +5,11 @@ window.GANTT_CONFIG = {
 
   // Google Sheet published as CSV (File → Share → Publish to web → CSV).
   // Leave empty to use the sample data in data/sample-milestones.csv.
-  sheetCsvUrl: "",
+  sheetCsvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRvOfpldrq-7LFFPsQlvHg6Z1fRIwciAG3cJXsQq21Ec2fwWcAoapXqRDi7fjQLBep1tqA_gn3Jt0MG/pub?gid=266668595&single=true&output=csv",
 
   // Link that collaborators open to edit the sheet (the normal sheet URL).
   // Leave empty to hide the "Edit milestones" button.
-  sheetEditUrl: "",
+  sheetEditUrl: "https://docs.google.com/spreadsheets/d/1DGnfkv9p-y9pYNtpzW6M5LXWg0l9zKyUYdQg-ONxkds/edit?gid=266668595#gid=266668595",
 
   fallbackCsv: "data/sample-milestones.csv",
 
