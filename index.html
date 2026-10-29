@@ -27,6 +27,10 @@
       <span class="control-label">Horizon</span>
       <div id="horizon-filters" class="chips"></div>
     </div>
+    <div class="control-group">
+      <span class="control-label">Status</span>
+      <div id="status-filters" class="chips"></div>
+    </div>
     <div class="control-row">
       <input id="search" type="search" placeholder="Search milestones, owners, notes…" aria-label="Search">
       <label class="select">
@@ -45,6 +49,14 @@
   </section>
 
   <div id="warnings" class="warnings" hidden></div>
+
+  <div id="timenav" class="timenav" hidden>
+    <button id="nav-prev" class="btn btn-sm" type="button" aria-label="Earlier">◀</button>
+    <input id="nav-slider" type="range" min="0" max="1000" value="0" aria-label="Move through time">
+    <button id="nav-next" class="btn btn-sm" type="button" aria-label="Later">▶</button>
+    <button id="nav-today" class="btn btn-sm" type="button">Today</button>
+    <span id="nav-range" class="nav-range"></span>
+  </div>
 
   <main id="gantt" class="gantt"><p class="empty">Loading milestones…</p></main>
 

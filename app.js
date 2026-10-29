@@ -26,10 +26,12 @@
     colors: {},
     hiddenThemes: new Set(),
     hiddenHorizons: new Set(),
+    hiddenStatuses: new Set(),
     query: "",
     groupBy: "theme",
     zoom: ZOOMS[CFG.defaultZoom] ? CFG.defaultZoom : "quarter",
     scrolledToToday: false,
+    view: null, // { rangeStart, px } of the current render, used by the time navigation
   };
 
   const $ = (sel) => document.querySelector(sel);
@@ -220,6 +222,9 @@
     $("#horizon-filters").innerHTML = HORIZON_ORDER.map((h) =>
       `<button type="button" class="chip" data-horizon="${h}" aria-pressed="${!state.hiddenHorizons.has(h)}"><span class="swatch h-${h}"></span>${HORIZONS[h]}</button>`
     ).join("");
+    $("#status-filters").innerHTML = Object.keys(STATUSES).map((s) =>
+      `<button type="button" class="chip" data-status="${s}" aria-pressed="${!state.hiddenStatuses.has(s)}"><span class="status-dot st-${s}"></span>${STATUSES[s]}</button>`
+    ).join("");
   }
 
   function toggle(set, key) {
@@ -249,6 +254,23 @@
       chip.setAttribute("aria-pressed", !state.hiddenHorizons.has(chip.dataset.horizon));
       render();
     });
+    $("#status-filters").addEventListener("click", (e) => {
+      const chip = e.target.closest(".chip");
+      if (!chip) return;
+      toggle(state.hiddenStatuses, chip.dataset.status);
+      chip.setAttribute("aria-pressed", !state.hiddenStatuses.has(chip.dataset.status));
+      render();
+    });
+    $("#nav-slider").addEventListener("input", (e) => {
+      const sc = scroller();
+      if (sc) sc.scrollLeft = (e.target.value / 1000) * (sc.scrollWidth - sc.clientWidth);
+    });
+    $("#nav-prev").addEventListener("click", () => step(-1));
+    $("#nav-next").addEventListener("click", () => step(1));
+    $("#nav-today").addEventListener("click", () => {
+      const sc = scroller();
+      if (sc && state.view) sc.scrollTo({ left: Math.max(0, x(todayUTC()) - 120), behavior: "smooth" });
+    });
     $("#search").addEventListener("input", (e) => { state.query = e.target.value.trim().toLowerCase(); render(); });
     $("#group-by").addEventListener("change", (e) => { state.groupBy = e.target.value; render(); });
     $("#zoom").addEventListener("click", (e) => {
@@ -270,14 +292,14 @@
     });
     document.addEventListener("click", (e) => { if (!e.target.closest("#popover")) hidePopover(); });
     document.addEventListener("keydown", (e) => { if (e.key === "Escape") hidePopover(); });
-    window.addEventListener("resize", hidePopover);
+    window.addEventListener("resize", () => { hidePopover(); updateNav(); });
     $("#gantt").addEventListener("scroll", hidePopover, true);
   }
 
   // ---------- Gantt ----------
 
   function matches(it) {
-    if (state.hiddenThemes.has(it.theme) || state.hiddenHorizons.has(it.horizon)) return false;
+    if (state.hiddenThemes.has(it.theme) || state.hiddenHorizons.has(it.horizon) || state.hiddenStatuses.has(it.status)) return false;
     if (!state.query) return true;
     return [it.title, it.theme, it.owner, it.notes, HORIZONS[it.horizon], STATUSES[it.status]]
       .some((v) => v && v.toLowerCase().includes(state.query));
@@ -308,6 +330,8 @@
     const visible = state.items.filter(matches);
     if (!visible.length) {
       root.innerHTML = `<p class="empty">${state.items.length ? "No milestones match the current filters." : "No milestones yet."}</p>`;
+      state.view = null;
+      $("#timenav").hidden = true;
       return;
     }
 
@@ -318,15 +342,21 @@
     if (today >= min - 90 * DAY && today <= max + 90 * DAY) { min = Math.min(min, today); max = Math.max(max, today); }
     const d0 = new Date(min), d1 = new Date(max);
     const rangeStart = Date.UTC(d0.getUTCFullYear(), d0.getUTCMonth(), 1);
-    const rangeEnd = Date.UTC(d1.getUTCFullYear(), d1.getUTCMonth() + 1, 1);
+    let rangeEnd = Date.UTC(d1.getUTCFullYear(), d1.getUTCMonth() + 1, 1);
     const px = ZOOMS[state.zoom];
-    const x = (t) => ((t - rangeStart) / DAY) * px;
+    state.view = { rangeStart, px };
+    // Add empty months on the right until the timeline fills the available width.
+    const avail = root.clientWidth - (parseFloat(getComputedStyle(root).getPropertyValue("--label-w")) || 0);
+    while (x(rangeEnd) < avail) {
+      const e = new Date(rangeEnd);
+      rangeEnd = Date.UTC(e.getUTCFullYear(), e.getUTCMonth() + 1, 1);
+    }
     const trackW = Math.round(x(rangeEnd));
     const off = (n) => `calc(var(--label-w) + ${n}px)`;
 
     // Scale: years and months.
     let scale = "", grid = "";
-    for (let y = d0.getUTCFullYear(); y <= d1.getUTCFullYear(); y++) {
+    for (let y = d0.getUTCFullYear(); y <= new Date(rangeEnd - 1).getUTCFullYear(); y++) {
       const a = Math.max(Date.UTC(y, 0, 1), rangeStart), b = Math.min(Date.UTC(y + 1, 0, 1), rangeEnd);
       scale += `<div class="g-year" style="left:${x(a)}px;width:${x(b) - x(a)}px">${y}</div>`;
     }
@@ -384,13 +414,54 @@
       <div class="g-body">${grid}${rows}</div>
     </div></div>`;
 
-    const scroller = root.querySelector(".g-scroll");
+    const sc = scroller();
     if (!state.scrolledToToday) {
-      scroller.scrollLeft = Math.max(0, x(today) - 120);
+      sc.scrollLeft = Math.max(0, x(today) - 120);
       state.scrolledToToday = true;
     } else if (prevScroll !== undefined) {
-      scroller.scrollLeft = prevScroll;
+      sc.scrollLeft = prevScroll;
     }
+    sc.addEventListener("scroll", updateNav, { passive: true });
+    $("#timenav").hidden = false;
+    updateNav();
+  }
+
+  // ---------- Time navigation ----------
+
+  // Pixel position of a timestamp in the current render.
+  function x(t) {
+    return ((t - state.view.rangeStart) / DAY) * state.view.px;
+  }
+
+  function scroller() {
+    return $("#gantt .g-scroll");
+  }
+
+  // Width of the timeline area that is actually visible (excluding the sticky label column).
+  function trackViewport(sc) {
+    const corner = sc.querySelector(".g-corner");
+    return sc.clientWidth - (corner ? corner.offsetWidth : 0);
+  }
+
+  function step(dir) {
+    const sc = scroller();
+    if (sc) sc.scrollBy({ left: dir * trackViewport(sc) * 0.8, behavior: "smooth" });
+  }
+
+  function updateNav() {
+    const sc = scroller();
+    if (!sc || !state.view) return;
+    const max = sc.scrollWidth - sc.clientWidth;
+    const slider = $("#nav-slider");
+    slider.disabled = max <= 0;
+    slider.value = max > 0 ? Math.round((sc.scrollLeft / max) * 1000) : 0;
+    $("#nav-prev").disabled = sc.scrollLeft <= 0;
+    $("#nav-next").disabled = sc.scrollLeft >= max - 1;
+
+    const from = state.view.rangeStart + (sc.scrollLeft / state.view.px) * DAY;
+    const to = from + (trackViewport(sc) / state.view.px) * DAY;
+    const fmt = (t) => { const d = new Date(t); return `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`; };
+    $("#nav-range").textContent = `${fmt(from)} – ${fmt(to)}`;
   }
 
   // ---------- Popover ----------

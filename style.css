@@ -164,6 +164,19 @@ h1 { margin: 0; font-size: 24px; letter-spacing: -0.01em; }
 .segmented button + button { border-left: 1px solid var(--border); }
 .segmented button[aria-pressed="true"] { background: var(--accent); color: #fff; }
 
+/* Time navigation */
+.timenav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.btn-sm { padding: 5px 10px; font-size: 13px; }
+#nav-slider { flex: 1 1 auto; min-width: 80px; accent-color: var(--accent); cursor: pointer; }
+.timenav .btn:disabled, #nav-slider:disabled { opacity: 0.4; cursor: default; }
+.timenav .btn:disabled:hover { border-color: var(--border); }
+.nav-range { min-width: 150px; color: var(--muted); font-size: 13px; text-align: right; white-space: nowrap; }
+
 /* Warnings */
 .warnings {
   margin-bottom: 16px;
@@ -345,4 +358,7 @@ h1 { margin: 0; font-size: 24px; letter-spacing: -0.01em; }
   .control-label { width: 100%; }
   .g-label { padding: 0 8px; }
   .g-corner { padding: 0 8px 8px; }
+  .timenav { flex-wrap: wrap; }
+  #nav-slider { order: -1; flex-basis: 100%; }
+  .nav-range { flex: 1; min-width: 0; }
 }
