@@ -28,6 +28,7 @@
     hiddenThemes: new Set(),
     hiddenHorizons: new Set(),
     hiddenStatuses: new Set(),
+    openDone: loadOpenDone(), // groups whose "done" section is expanded, keyed "theme:<name>" / "horizon:<key>"
     query: "",
     groupBy: "theme",
     zoom: ZOOMS[CFG.defaultZoom] ? CFG.defaultZoom : "quarter",
@@ -36,6 +37,15 @@
   };
 
   const $ = (sel) => document.querySelector(sel);
+
+  // Which done sections are expanded is a per-browser convenience; storage may be unavailable.
+  const OPEN_DONE_KEY = "gantt.openDone";
+  function loadOpenDone() {
+    try { return new Set(JSON.parse(localStorage.getItem(OPEN_DONE_KEY)) || []); } catch { return new Set(); }
+  }
+  function saveOpenDone() {
+    try { localStorage.setItem(OPEN_DONE_KEY, JSON.stringify([...state.openDone])); } catch { /* ignore */ }
+  }
 
   function esc(s) {
     return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -288,6 +298,14 @@
     $("#reload").addEventListener("click", () => load());
 
     $("#gantt").addEventListener("click", (e) => {
+      const doneBtn = e.target.closest("[data-done]");
+      if (doneBtn) {
+        e.stopPropagation();
+        toggle(state.openDone, doneBtn.dataset.done);
+        saveOpenDone();
+        render();
+        return;
+      }
       const el = e.target.closest("[data-id]");
       if (el) { e.stopPropagation(); showPopover(state.items[+el.dataset.id], el); }
     });
@@ -394,23 +412,20 @@
         <div class="g-track" style="width:${trackW}px"><div class="g-span" style="left:${x(gs)}px;width:${Math.max(x(ge + DAY) - x(gs), 4)}px"></div></div>
       </div>`;
 
-      group.forEach((it) => {
-        const c = state.colors[it.theme];
-        const left = x(it.start);
-        const width = x(it.end + DAY) - left;
-        const meta = isTheme ? HORIZONS[it.horizon] : it.theme;
-        const tip = `${it.title} — ${fmtDate(it.start)}${it.point ? "" : " to " + fmtDate(it.end)}`;
-        const bar = it.point
-          ? `<div class="bar point h-${it.horizon} st-${it.status}" style="left:${left}px" data-id="${it.id}" tabindex="0" title="${esc(tip)}"></div>`
-          : `<div class="bar h-${it.horizon} st-${it.status}" style="left:${left}px;width:${width}px" data-id="${it.id}" tabindex="0" title="${esc(tip)}">${it.status === "done" && width > 20 ? '<span class="tick">✓</span>' : ""}</div>`;
-        rows += `<div class="g-row" style="--c:${c}">
-          <div class="g-label" data-id="${it.id}">
-            <span class="g-title">${esc(it.title)}</span>
-            <span class="g-meta"><span class="status-dot st-${it.status}" title="${STATUSES[it.status]}"></span>${esc(meta)}${it.owner ? " · " + esc(it.owner) : ""}</span>
-          </div>
-          <div class="g-track" style="width:${trackW}px">${bar}</div>
+      // Done items go first, collapsed into one summary row, so each group reads past → future.
+      const done = group.filter((it) => it.status === "done");
+      const rest = group.filter((it) => it.status !== "done");
+      if (done.length) {
+        const doneKey = `${state.groupBy}:${key}`;
+        const open = state.openDone.has(doneKey);
+        const ds = Math.min(...done.map((i) => i.start)), de = Math.max(...done.map((i) => i.end));
+        rows += `<div class="g-row g-done" style="--c:${color}">
+          <div class="g-label"><button type="button" class="done-toggle" data-done="${esc(doneKey)}" aria-expanded="${open}"><span class="caret">${open ? "▾" : "▸"}</span><span class="status-dot st-done"></span>${done.length} done</button></div>
+          <div class="g-track" style="width:${trackW}px">${open ? "" : `<div class="g-span done-span" style="left:${x(ds)}px;width:${Math.max(x(de + DAY) - x(ds), 4)}px"></div>`}</div>
         </div>`;
-      });
+        if (open) done.forEach((it) => { rows += itemRow(it, isTheme, trackW, " g-done-item"); });
+      }
+      rest.forEach((it) => { rows += itemRow(it, isTheme, trackW, ""); });
     });
 
     const prevScroll = root.querySelector(".g-scroll")?.scrollLeft;
@@ -429,6 +444,24 @@
     sc.addEventListener("scroll", updateNav, { passive: true });
     $("#timenav").hidden = false;
     updateNav();
+  }
+
+  function itemRow(it, isTheme, trackW, cls) {
+    const c = state.colors[it.theme];
+    const left = x(it.start);
+    const width = x(it.end + DAY) - left;
+    const meta = isTheme ? HORIZONS[it.horizon] : it.theme;
+    const tip = `${it.title} — ${fmtDate(it.start)}${it.point ? "" : " to " + fmtDate(it.end)}`;
+    const bar = it.point
+      ? `<div class="bar point h-${it.horizon} st-${it.status}" style="left:${left}px" data-id="${it.id}" tabindex="0" title="${esc(tip)}"></div>`
+      : `<div class="bar h-${it.horizon} st-${it.status}" style="left:${left}px;width:${width}px" data-id="${it.id}" tabindex="0" title="${esc(tip)}">${it.status === "done" && width > 20 ? '<span class="tick">✓</span>' : ""}</div>`;
+    return `<div class="g-row${cls}" style="--c:${c}">
+      <div class="g-label" data-id="${it.id}">
+        <span class="g-title">${esc(it.title)}</span>
+        <span class="g-meta"><span class="status-dot st-${it.status}" title="${STATUSES[it.status]}"></span>${esc(meta)}${it.owner ? " · " + esc(it.owner) : ""}</span>
+      </div>
+      <div class="g-track" style="width:${trackW}px">${bar}</div>
+    </div>`;
   }
 
   // ---------- Time navigation ----------

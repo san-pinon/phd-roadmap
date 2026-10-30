@@ -283,6 +283,28 @@ h1 { margin: 0; font-size: 24px; letter-spacing: -0.01em; }
   opacity: 0.35;
 }
 
+/* Collapsible "done" section at the top of each group */
+.g-done { height: 30px; }
+.g-done .g-label { cursor: default; }
+.done-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 6px;
+  margin-left: -6px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.done-toggle:hover, .done-toggle:focus-visible { color: var(--text); background: color-mix(in srgb, var(--accent) 10%, transparent); outline: none; }
+.done-toggle .caret { width: 12px; font-size: 13px; }
+.g-span.done-span { background: #16a34a; height: 2px; margin-top: -1px; }
+.g-done-item .g-title { color: var(--muted); }
+
 /* Bars: colour = theme, style = horizon */
 .bar {
   position: absolute;
