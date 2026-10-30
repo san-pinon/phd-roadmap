@@ -29,5 +29,5 @@ window.GANTT_CONFIG = {
   },
 
   // Initial zoom: "month", "quarter" or "year".
-  defaultZoom: "quarter",
+  defaultZoom: "month",
 };
