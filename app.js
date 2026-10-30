@@ -4,6 +4,7 @@
   const CFG = Object.assign({
     title: "Project Roadmap",
     subtitle: "",
+    description: "",
     sheetCsvUrl: "",
     sheetEditUrl: "",
     fallbackCsv: "data/sample-milestones.csv",
@@ -235,6 +236,10 @@
     $("#title").textContent = CFG.title;
     document.title = CFG.title;
     $("#subtitle").textContent = CFG.subtitle;
+    if (CFG.description) {
+      $("#description").textContent = CFG.description;
+      $("#description").hidden = false;
+    }
     if (CFG.sheetEditUrl) {
       $("#edit-link").href = CFG.sheetEditUrl;
       $("#edit-link").hidden = false;

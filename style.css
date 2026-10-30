@@ -77,6 +77,8 @@ h1 { margin: 0; font-size: 24px; letter-spacing: -0.01em; }
 .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .btn-primary:hover { filter: brightness(1.08); border-color: var(--accent); }
 
+.description { margin: 0 0 8px; color: var(--muted); font-size: 13px; }
+
 /* Controls */
 .controls {
   display: grid;

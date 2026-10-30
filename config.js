@@ -1,7 +1,10 @@
 // Site settings. This is the only file you normally need to edit.
 window.GANTT_CONFIG = {
-  title: "PhD Project Roadmap",
-  subtitle: "Short-, medium- and long-term milestones, by theme",
+  title: "PhD Project Timeline",
+  subtitle: "Santiago Piñon (IGF, UNAM)",
+
+  // Optional line shown above the filters. Leave empty to hide it.
+  description: "Short-, medium- and long-term milestones, by theme",
 
   // Google Sheet published as CSV (File → Share → Publish to web → CSV).
   // Leave empty to use the sample data in data/sample-milestones.csv.
